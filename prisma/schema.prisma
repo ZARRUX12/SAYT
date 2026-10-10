@@ -1,0 +1,280 @@
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  name      String
+  password  String
+  role      String   @default("SUPER_ADMIN") // SUPER_ADMIN, ADMIN, EDITOR
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  sessions  Session[]
+  logs      AuditLog[]
+}
+
+model Session {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  token     String   @unique
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+}
+
+model SiteSetting {
+  id              String   @id @default("default")
+  siteName        String   @default("TARGET PRO")
+  slogan          String   @default("ТЕХНОЛОГИИ, РЕКЛАМА И АВТОМАТИЗАЦИЯ ДЛЯ ВАШЕГО БИЗНЕСА")
+  phone           String   @default("+998932368910")
+  telegram        String   @default("@Mr_Zarrux")
+  telegramUrl     String   @default("https://t.me/Mr_Zarrux")
+  phoneUrl        String   @default("tel:+998932368910")
+  email           String   @default("info@targetpro.uz")
+  address         String   @default("Ташкент, Узбекистан")
+  country         String   @default("Узбекистан")
+  city            String   @default("Ташкент")
+  logoUrl         String   @default("/logo.png")
+  faviconUrl      String   @default("/favicon.png")
+  copyright       String   @default("© TARGET PRO. Все права защищены.")
+  metaTitle       String   @default("TARGET PRO — Технологии, Реклама и Автоматизация для вашего бизнеса")
+  metaDescription String   @default("Цифровая платформа полного цикла: разработка сайтов, Telegram-ботов, AI, автоматизация, SMM и IT-сервисы.")
+  updatedAt       DateTime @updatedAt
+}
+
+model ServiceCategory {
+  id          String    @id @default(cuid())
+  number      String    // e.g. "01"
+  name        String
+  slug        String    @unique
+  description String?
+  icon3D      String    @default("website") // website, bot, ai, automation, smm, marketing, design, video, seo, software, printing, it
+  order       Int       @default(0)
+  isVisible   Boolean   @default(true)
+  services    Service[]
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+
+model Service {
+  id               String          @id @default(cuid())
+  title            String
+  slug             String          @unique
+  categoryId       String
+  category         ServiceCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  shortDesc        String
+  fullDesc         String
+  icon             String          @default("Zap")
+  coverImage       String?
+  priceMode        String          @default("CUSTOM") // HIDDEN, FIXED, FROM, RANGE, CUSTOM
+  priceValue       Float?
+  priceLabel       String?         @default("Индивидуально")
+  currency         String          @default("UZS")
+  features         String          // JSON array of strings
+  workflow         String?         // JSON array of steps
+  advantages       String?         // JSON array of advantages
+  faq              String?         // JSON array of Q&A
+  tags             String?         // Comma-separated or JSON
+  status           String          @default("PUBLISHED") // DRAFT, PUBLISHED, ARCHIVED
+  order            Int             @default(0)
+  isFeatured       Boolean         @default(false)
+  
+  // 3D parameters
+  model3D          String?         // GLB/GLTF url or preset name
+  orbitRadius      Float           @default(3.5)
+  animationSpeed   Float           @default(1.0)
+  rotationSpeed    Float           @default(1.0)
+  glowColor        String          @default("#FFC200")
+  
+  seoTitle         String?
+  seoDescription   String?
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
+}
+
+model Solution {
+  id          String   @id @default(cuid())
+  title       String
+  slug        String   @unique
+  subtitle    String?
+  description String
+  coverImage  String?
+  services    String   // JSON array of service names or IDs
+  features    String   // JSON array
+  status      String   @default("PUBLISHED")
+  order       Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model PortfolioProject {
+  id           String           @id @default(cuid())
+  title        String
+  slug         String           @unique
+  client       String
+  category     String           // WEBSITES, BOTS, SOFTWARE, AI, SMM, DESIGN, VIDEO
+  shortDesc    String
+  challenge    String?
+  solution     String?
+  technologies String?          // JSON array
+  results      String?
+  coverImage   String
+  status       String           @default("PUBLISHED")
+  order        Int              @default(0)
+  images       PortfolioImage[]
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
+}
+
+model PortfolioImage {
+  id        String           @id @default(cuid())
+  projectId String
+  project   PortfolioProject @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  url       String
+  caption   String?
+  order     Int              @default(0)
+}
+
+model Lead {
+  id        String   @id @default(cuid())
+  name      String
+  phone     String
+  telegram  String?
+  email     String?
+  company   String?
+  service   String?
+  message   String?
+  source    String   @default("WEBSITE") // HERO, SERVICE_PAGE, CALCULATOR, BRIEF, MODAL
+  status    String   @default("NEW")     // NEW, IN_PROGRESS, CONTACTED, COMPLETED, CANCELLED
+  details   String?  // JSON with extra info like calculator responses
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Brief {
+  id             String   @id @default(cuid())
+  name           String
+  company        String?
+  phone          String
+  telegram       String?
+  email          String?
+  website        String?
+  businessType   String?
+  targetGoal     String?
+  chosenServices String?  // JSON array
+  budget         String?
+  timeline       String?
+  description    String
+  fileUrl        String?
+  status         String   @default("NEW") // NEW, IN_PROGRESS, CONTACTED, COMPLETED, CANCELLED
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+}
+
+model Media {
+  id        String   @id @default(cuid())
+  filename  String
+  path      String
+  mimetype  String
+  size      Int
+  width     Int?
+  height    Int?
+  createdAt DateTime @default(now())
+}
+
+model OwnerProfile {
+  id        String   @id @default("default")
+  name      String   @default("Зарух")
+  surname   String   @default("TARGET PRO")
+  position  String   @default("Основатель & Руководитель TARGET PRO")
+  photoUrl  String?
+  shortBio  String   @default("Создаем высокотехнологичные решения, автоматизацию и маркетинг для масштабирования бизнеса.")
+  fullBio   String   @default("TARGET PRO объединяет передовой IT-инжиниринг, внедрение искусственного интеллекта и результативный performance-маркетинг.")
+  phone     String   @default("+998932368910")
+  telegram  String   @default("@Mr_Zarrux")
+  email     String   @default("info@targetpro.uz")
+  social    String?  // JSON
+  updatedAt DateTime @updatedAt
+}
+
+model Location {
+  id             String   @id @default("default")
+  country        String   @default("Узбекистан")
+  city           String   @default("Ташкент")
+  address        String   @default("г. Ташкент, Узбекистан")
+  zipCode        String?
+  latitude       Float?   @default(41.311081)
+  longitude      Float?   @default(69.240562)
+  googleMapsUrl  String?
+  osmUrl         String?
+  workingHours   String   @default("Пн - Сб: 09:00 - 20:00")
+  updatedAt      DateTime @updatedAt
+}
+
+model SocialLink {
+  id        String   @id @default(cuid())
+  platform  String   // Instagram, Telegram, TikTok, YouTube, Facebook, etc.
+  url       String
+  icon      String?
+  order     Int      @default(0)
+  isVisible Boolean  @default(true)
+}
+
+model NavigationItem {
+  id        String   @id @default(cuid())
+  title     String
+  url       String
+  order     Int      @default(0)
+  isVisible Boolean  @default(true)
+}
+
+model Statistic {
+  id          String   @id @default(cuid())
+  name        String
+  value       String
+  suffix      String?  @default("+")
+  description String?
+  icon        String?
+  order       Int      @default(0)
+  isVisible   Boolean  @default(true)
+}
+
+model Testimonial {
+  id          String   @id @default(cuid())
+  name        String
+  company     String?
+  position    String?
+  photoUrl    String?
+  content     String
+  rating      Int      @default(5)
+  order       Int      @default(0)
+  isVisible   Boolean  @default(true)
+  createdAt   DateTime @default(now())
+}
+
+model FAQ {
+  id        String   @id @default(cuid())
+  question  String
+  answer    String
+  category  String?  @default("GENERAL")
+  order     Int      @default(0)
+  isVisible Boolean  @default(true)
+}
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  userId    String?
+  user      User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  userName  String   @default("ADMIN")
+  action    String   // CREATE, UPDATE, DELETE, LOGIN, LOGOUT
+  entity    String   // SERVICE, LEAD, SETTING, MEDIA, etc.
+  entityId  String?
+  details   String?
+  createdAt DateTime @default(now())
+}
